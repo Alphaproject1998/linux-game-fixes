@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Launches HoYoPlay the same way ProtonPlus "Run custom EXE" does: bare proton run, no Steam Linux Runtime container, no gamescope wrapper.
+set -euo pipefail
+
+prefix="/mnt/M2Games/Steam/steamapps/compatdata/2453920314"
+proton="$HOME/.local/share/Steam/compatibilitytools.d/DW-Proton Latest/proton"
+exe="$prefix/HoYoPlay/launcher.exe"
+
+export STEAM_COMPAT_DATA_PATH="$prefix"
+export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam"
+# Proton's ffmpeg wants libvpx.so.9 and Arch has .12. Without the Steam runtime container nothing supplies the old one, so gst-libav gets blacklisted and cutscenes go black.
+export LD_LIBRARY_PATH="$HOME/.local/share/proton-compat-libs${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+exec "$proton" run "$exe"
