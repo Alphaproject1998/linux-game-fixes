@@ -8,7 +8,9 @@ Since 3.8 (November 2026) the Steam version isn't the game anymore. Steam gives 
 
 Under Proton that launcher is broken in a handful of ways, starting with its window not showing up at all. This is a launch option that fixes them. Nothing gets installed on your system: it all happens in the game's own Proton prefix each time you launch, and taking the launch option out turns it off again.
 
-So far I've used it to download the game and start it as far as the title screen, notices included. I haven't played through it yet, so treat anything past that as untested until I update this.
+I've used it to download the game and play a few hours of story, with cutscenes, Convene history and the pity pages all working and no crashes. That's on my machine only, listed under Requirements, so other setups are still untested.
+
+https://github.com/user-attachments/assets/e85d2766-f492-457e-a318-2c5c99f50a1c
 
 Unofficial, and nothing to do with Kuro Games.
 
