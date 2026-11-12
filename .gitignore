@@ -1,2 +1,5 @@
 .*
 !.gitignore
+!.github
+
+__pycache__/

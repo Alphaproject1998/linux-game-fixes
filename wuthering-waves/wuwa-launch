@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Steam launch options for Wuthering Waves: /path/to/wuwa-launch %command%
+# The WUWA_ options are in README.md.
+
+version=1.0.0
+here="$(dirname "$(readlink -f "$0")")"
+
+if [[ "$1" == --version ]]; then
+	echo "wuwa-launch $version"
+	exit 0
+fi
+
+if [[ $# -eq 0 ]]; then
+	self="$(readlink -f "$0")"
+	[[ "$self" == *' '* ]] && self="\"$self\""
+	echo "wuwa-launch $version"
+	echo "Put this in Wuthering Waves' launch options in Steam:"
+	echo "$self %command%"
+	exit 0
+fi
+
+if [[ -z "$STEAM_COMPAT_DATA_PATH" ]]; then
+	exec "$@"
+fi
+
+prefix="$STEAM_COMPAT_DATA_PATH/pfx"
+hook_dir="$prefix/drive_c/ProgramData/wuwa-launch"
+framework_dir="$prefix/drive_c/windows/Microsoft.NET/Framework64/v4.0.30319"
+
+copy_if_changed() {
+	local source="$1" target="$2"
+	cmp -s "$source" "$target" && return 0
+	mkdir -p "$(dirname "$target")" && cp "$source" "$target"
+}
+
+set_screen_depth() {
+	local registry="$prefix/user.reg" updated
+	[[ -f "$registry" ]] || return 0
+	updated="$(mktemp)" || return 0
+	awk -v want="$1" -v stamp="$(date +%s)" '
+		function flush() {
+			if (pending && want) print "\"ScreenDepth\"=\"32\""
+			pending = 0
+		}
+		BEGIN {
+			count = split("launcher_main.exe launcher_updater.exe msedgewebview2.exe", exes, " ")
+			for (i = 1; i <= count; i++) ours[tolower("[Software\\\\Wine\\\\AppDefaults\\\\" exes[i] "\\\\X11 Driver]")] = exes[i]
+		}
+		/^\[/ {
+			flush()
+			key = $0
+			sub(/\][^]]*$/, "]", key)
+			key = tolower(key)
+			inside = (key in ours)
+			if (inside) {
+				seen[key] = 1
+				pending = 1
+			}
+			print
+			next
+		}
+		pending && /^#time=/ {
+			print
+			flush()
+			next
+		}
+		{ flush() }
+		inside && tolower($0) ~ /^"screendepth"=/ { next }
+		{ print }
+		END {
+			flush()
+			if (!want) exit
+			for (key in ours) {
+				if (!(key in seen)) printf "\n[Software\\\\Wine\\\\AppDefaults\\\\%s\\\\X11 Driver] %s\n\"ScreenDepth\"=\"32\"\n", ours[key], stamp
+			}
+		}
+	' "$registry" > "$updated" && ! cmp -s "$updated" "$registry" && cat "$updated" > "$registry"
+	rm -f "$updated"
+}
+
+# Proton's Wine has no wminet_utils.dll, so .NET's System.Management fails and the launcher can't read any drive's free space.
+[[ -d "$prefix" ]] && copy_if_changed "$here/wine/wminet_utils.dll" "$framework_dir/wminet_utils.dll"
+
+# A 32-bit default visual keeps the webview's alpha, so its rounded corners come out see-through rather than black.
+if [[ "${WUWA_SCREEN_DEPTH:-1}" == 0 ]]; then
+	set_screen_depth 0
+else
+	set_screen_depth 1
+fi
+
+# The game's own web popups (notices and the like) arrive as shared GPU textures, which Proton's Wine can't open, so they come out white.
+# Kuro left a switch for drawing them on the CPU instead: an empty usebitmap.flag beside KRWebClient.exe.
+webview_dir="${STEAM_COMPAT_INSTALL_PATH:-}/Wuthering Waves Game/Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDKWebViewOSR"
+if [[ -n "$STEAM_COMPAT_INSTALL_PATH" && -d "$webview_dir" ]]; then
+	if [[ "${WUWA_WEBVIEW_BITMAP:-1}" == 0 ]]; then
+		rm -f "$webview_dir/usebitmap.flag"
+	else
+		touch "$webview_dir/usebitmap.flag"
+	fi
+fi
+
+if [[ "${WUWA_LAUNCHER_DECK:-1}" == 1 ]]; then
+	# Inside the prefix is the one place sure to be visible from the Steam Linux Runtime container, but it doesn't exist before the first launch.
+	if [[ -d "$prefix" ]] && copy_if_changed "$here/deck-hook/DeckHook.dll" "$hook_dir/DeckHook.dll"; then
+		hook='C:\ProgramData\wuwa-launch\DeckHook.dll'
+	else
+		hook="Z:${here//\//\\}\\deck-hook\\DeckHook.dll"
+	fi
+	export WUWA_LAUNCHER_DECK=1
+	export DOTNET_STARTUP_HOOKS="${DOTNET_STARTUP_HOOKS:+$DOTNET_STARTUP_HOOKS;}$hook"
+fi
+
+if [[ "${WUWA_LAUNCHER_WINDOW:-1}" == 1 && -n "$DISPLAY" ]] && command -v python3 > /dev/null; then
+	read -ra window_args <<< "${WUWA_LAUNCHER_WINDOW_ARGS:-}"
+	python3 -I "$here/launcher-window.py" --appid "${SteamAppId:-}" --parent $$ "${window_args[@]}" &
+fi
+
+exec "$@"

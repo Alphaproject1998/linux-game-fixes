@@ -5,8 +5,7 @@
 Each game has its own folder with everything for it: the script, a README with what was broken and what fixed it, how to set it up, and the options for tweaking it. Pick the game, read its README, and ignore the rest.
 
 - [Star Rail](star-rail/README.md), through a bare Proton prefix: no Steam Linux Runtime container and no gamescope, the way ProtonPlus' "Run custom EXE" does it. Fixes the game not starting and every video locking up on black.
-
-It's only Star Rail for now, but more will be added as I get other games working.
+- [Wuthering Waves](wuthering-waves/README.md), the Steam version since 3.8, through a launch option in Steam. Fixes Kuro's launcher being invisible, black backgrounds, and the game opening to a white screen once it's downloaded.
 
 ## Why this is here
 
@@ -24,4 +23,4 @@ These were worked out with some help from an AI coding assistant, and each game'
 
 ## Licence
 
-GNU General Public License, version 2 or (at your option) any later version. See [LICENSE](LICENSE).
+GNU General Public License, version 2 or (at your option) any later version. See [LICENSE](LICENSE). `wuthering-waves/wine/wminet_utils.dll` is Wine's own, under the LGPL 2.1 or later.

@@ -150,4 +150,4 @@ First release: the launch script and the `libvpx.so.9` fix for the videos.
 
 ## About AI
 
-I worked this out with some help from an AI coding assistant. It helped dig through the logs and Proton's libraries to find out why the videos broke. The fix itself is what I created and run, and it's what I'm playing on now.
+I worked this out with some help from an AI coding assistant. It helped dig through the logs and Proton's libraries to find out why the videos broke. The fix itself is what I created and run, and I've played on it pretty much every day since.
